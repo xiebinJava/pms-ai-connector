@@ -4,12 +4,14 @@ const port = process.env.PMS_CONFORMANCE_PORT ?? "3187";
 const baseUrl = `http://127.0.0.1:${port}`;
 const serverEnv = {
   ...process.env,
-  PMS_BASE_URL: process.env.PMS_BASE_URL ?? "http://127.0.0.1:9/api",
+  // Conformance is a protocol-only gate. Never inherit a real PMS endpoint or
+  // bearer token from the shell; the live, isolated PMS gate is separate.
+  PMS_BASE_URL: "http://127.0.0.1:9/api",
   PMS_MCP_HOST: "127.0.0.1",
   PMS_MCP_PORT: port,
   PMS_MCP_ALLOW_INSECURE_LOCALHOST: "true",
   PMS_MCP_REQUIRE_AUTHORIZATION: "false",
-  PMS_AUTH_TOKEN: process.env.PMS_AUTH_TOKEN ?? "conformance-token",
+  PMS_AUTH_TOKEN: "conformance-token",
 };
 
 const server = spawn("./apps/mcp-server/node_modules/.bin/tsx", ["apps/mcp-server/src/http-main.ts"], {

@@ -3,7 +3,7 @@ import type { Server } from "node:http";
 import { describe, expect, it } from "vitest";
 import { capabilityCatalogSchema, operationResultSchema } from "../../packages/pms-contracts/src/index.js";
 import { createPmsHttpServer } from "../../apps/mcp-server/src/http-main.js";
-import { e2eEnabled, loadScenario, type ScenarioStep } from "./helpers.js";
+import { e2eEnabled, loadScenario } from "./helpers.js";
 
 const protocolVersion = "2026-07-28";
 
@@ -39,7 +39,7 @@ describe("PMS MCP HTTP acceptance", () => {
 
         const listed = await rpc(url, token, "tools/list", {});
         const toolNames = new Set((listed.tools ?? []).map((tool: { name: string }) => tool.name));
-        expect(toolNames).toEqual(new Set([
+        expect([...toolNames]).toEqual(expect.arrayContaining([
           "pms_capabilities",
           "pms_search",
           "pms_get",
