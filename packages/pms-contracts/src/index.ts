@@ -3,3 +3,4 @@ export * from "./capability.js";
 export * from "./capability-normalizer.js";
 export * from "./query.js";
 export * from "./error.js";
+export * from "./envelope.js";

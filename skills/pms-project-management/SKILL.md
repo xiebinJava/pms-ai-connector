@@ -1,7 +1,7 @@
 ---
 name: pms-project-management
 description: 通过 PMS AI Connector 读取和更新需求、项目、专题、故事、任务与迭代计划。先发现能力和当前流程，再执行后端允许的操作。
-allowed-tools: Bash(opencli pms:*), Read
+allowed-tools: Bash(pms:*), Read
 ---
 
 # PMS 项目管理规则
@@ -10,10 +10,10 @@ PMS 后端是唯一业务真源。所有数据、权限、流程模板、流程�
 
 ## 工作顺序
 
-1. 先执行 `opencli pms capabilities -f json`，读取当前用户可见资源、操作、流程类型、模板版本、节点、组件和字段。
-2. 涉及具体事项时，再执行 `opencli pms get <resourceType> <resourceId> -f json`，确认事项绑定的流程版本、当前节点、运行时组件、字段值和允许动作。
-3. 查询列表使用 `opencli pms search <resourceType> ... -f json`。
-4. 只有能力目录和流程上下文允许的写操作，才使用 `opencli pms execute` 或 `opencli pms workflow-action`。
+1. 先执行 `pms capabilities --format json`，读取当前用户可见资源、操作、流程类型、模板版本、节点、组件和字段。
+2. 涉及具体事项时，再执行 `pms context <resourceType> <resourceId> --format json`，确认事项绑定的流程版本、当前节点、运行时组件、字段值和允许动作。
+3. 查询列表使用 `pms search <resourceType> --format json`，单项读取使用 `pms get <resourceType> <resourceId> --format json`。
+4. 只有能力目录和流程上下文允许的写操作，才使用 `pms operation preview` 后执行 `pms operation execute` 或 `pms workflow action`。
 
 ## 业务关系
 
@@ -35,7 +35,7 @@ PMS 后端是唯一业务真源。所有数据、权限、流程模板、流程�
 
 - 详情页展示的是事项实际绑定的已发布模板版本，不是当前默认模板。
 - 模板可以把组件绑定到不同节点；因此不能假设固定的“开发与迭代控制”“故事拆分”节点或固定字段。
-- 修改负责人、排期、动态字段或完成节点前，必须使用 `pms_get` 读取当前节点 ID、字段 key、版本和 `allowedActions`。
+- 修改负责人、排期、动态字段或完成节点前，必须使用 `pms context` 读取当前节点 ID、字段 key、版本和 `allowedActions`。
 - 节点完成、字段更新和任务创建必须携带能力目录要求的事项类型、事项 ID、节点 ID、字段值或任务参数，以及当前版本信息。
 
 ## 写操作要求

@@ -40,7 +40,7 @@ export const automaticOperationRequestSchema = z.object({
   context: operationContextSchema.optional(),
   contract: operationContractSchema.optional(),
   idempotencyKey: z.string().trim().min(1).max(160),
-  clientId: z.enum(["mcp", "opencli"]),
+  clientId: z.literal("pms-cli"),
   requestId: z.string().trim().min(1).max(160),
 });
 
@@ -59,3 +59,15 @@ export const operationResultSchema = z.object({
 });
 
 export type OperationResult = z.infer<typeof operationResultSchema>;
+
+export const operationPreviewSchema = z.object({
+  operationId: z.string().trim().min(1),
+  command: z.string().trim().min(1),
+  expiresAt: z.string().trim().min(1),
+  contextVersion: z.string().trim().min(1),
+  warnings: z.array(z.string()).default([]),
+  changes: z.array(z.record(z.string(), z.unknown())).default([]),
+  refreshScopes: z.array(z.string()).default([]),
+});
+
+export type OperationPreview = z.infer<typeof operationPreviewSchema>;

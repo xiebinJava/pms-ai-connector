@@ -12,7 +12,7 @@ describe("PMS connector shared schemas", () => {
   it("rejects an operation request without required execution metadata", () => {
     const result = automaticOperationRequestSchema.safeParse({
       arguments: {},
-      clientId: "mcp",
+      clientId: "pms-cli",
     });
 
     expect(result.success).toBe(false);
@@ -36,7 +36,7 @@ describe("PMS connector shared schemas", () => {
       operation: "topic.create",
       arguments: { name: "订单中心" },
       idempotencyKey: "idem-1",
-      clientId: "opencli",
+      clientId: "pms-cli",
       requestId: "req-1",
     });
 

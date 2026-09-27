@@ -1,0 +1,16 @@
+{
+  "steps": [
+    {
+      "operation": "project.create",
+      "arguments": { "name": "PMS CLI E2E {{runId}}" },
+      "capture": { "projectId": "data.projectId" }
+    }
+  ],
+  "cleanup": [
+    {
+      "operation": "project.delete",
+      "arguments": { "projectId": "{{projectId}}" },
+      "whenCapture": "projectId"
+    }
+  ]
+}

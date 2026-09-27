@@ -1,7 +1,6 @@
 {
-  "name": "pms-ai-connector",
+  "name": "@xiebinjava/pms-cli",
   "version": "0.1.0",
-  "private": true,
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@10.18.2",
@@ -11,20 +10,18 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build:mcp": "esbuild apps/mcp-server/src/http-main.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/mcp-http-main.js",
-    "build:opencli": "node scripts/build-opencli-plugin.mjs",
-    "smoke:opencli": "pnpm run build:opencli && node scripts/smoke-opencli-plugin.mjs",
-    "verify:real-pms:readonly": "PMS_E2E_READONLY=true vitest run tests/e2e/readonly-pms.spec.ts",
-    "verify:real-pms:mcp": "PMS_E2E_MCP=true vitest run tests/e2e/mcp-http.spec.ts",
-    "conformance:mcp": "node scripts/run-mcp-conformance.mjs",
-    "start:mcp": "pnpm --filter @pms-ai-connector/mcp-server exec tsx src/http-main.ts"
+    "build:cli": "esbuild apps/pms-cli/src/main.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/pms-cli.js",
+    "verify:real-pms:readonly": "PMS_E2E_READONLY=true vitest run tests/e2e/pms-cli.e2e.test.ts"
   },
+  "bin": {
+    "pms": "dist/pms-cli.js"
+  },
+  "files": ["dist", "skills", "scripts/install-skill.ps1", "scripts/install-skill.sh", "docs/installation.md"],
   "dependencies": {
+    "keytar": "7.9.0",
     "zod": "4.2.0"
   },
   "devDependencies": {
-    "@jackwener/opencli": "1.8.8",
-    "@modelcontextprotocol/conformance": "0.2.0-alpha.11",
     "@types/node": "22.10.0",
     "esbuild": "0.23.1",
     "typescript": "5.7.2",

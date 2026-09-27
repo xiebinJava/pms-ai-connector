@@ -3,6 +3,7 @@ import {
   automaticOperationRequestSchema,
   parseCapabilityCatalog,
   operationResultSchema,
+  operationPreviewSchema,
   queryRequestSchema,
   queryResultSchema,
   resourceRefSchema,
@@ -10,6 +11,7 @@ import {
   type AutomaticOperationRequest,
   type CapabilityCatalog,
   type OperationResult,
+  type OperationPreview,
   type QueryRequest,
   type QueryResult,
   type ResourceRef,
@@ -25,6 +27,7 @@ export interface PmsClient {
   capabilities(): Promise<CapabilityCatalog>;
   query(request: QueryRequest): Promise<QueryResult>;
   context(resource: ResourceRef): Promise<WorkflowContext>;
+  preview(request: AutomaticOperationRequest): Promise<OperationPreview>;
   execute(request: AutomaticOperationRequest): Promise<OperationResult>;
 }
 
@@ -136,6 +139,7 @@ export class PmsHttpClient implements PmsClient {
     };
     const data = await this.requestData("integration/ai/v1/operations/execute", {
       method: "POST",
+      headers: { "idempotency-key": normalized.idempotencyKey },
       body: JSON.stringify(body),
     }, false, normalized.requestId);
     const raw = operationWireResultSchema.parse(data);
@@ -148,6 +152,27 @@ export class PmsHttpClient implements PmsClient {
       refreshScopes: raw.refreshScopes ?? [],
       auditId: raw.auditId,
     });
+  }
+
+  async preview(request: AutomaticOperationRequest): Promise<OperationPreview> {
+    const normalized = automaticOperationRequestSchema.parse(request);
+    if (normalized.clientId !== this.options.clientId) {
+      throw new PmsClientError("validation", "clientId 与 Client 配置不一致");
+    }
+    const data = await this.requestData("integration/ai/v1/operations/preview", {
+      method: "POST",
+      body: JSON.stringify({
+        command: normalized.operation,
+        arguments: normalized.arguments,
+        contextId: normalized.context?.id,
+        contextVersion: normalized.context?.version,
+        contractId: normalized.contract?.id,
+        contractVersion: normalized.contract?.version,
+        clientId: normalized.clientId,
+        requestId: normalized.requestId,
+      }),
+    }, false, normalized.requestId);
+    return operationPreviewSchema.parse(data);
   }
 
   private async requestData<T = unknown>(
@@ -209,6 +234,7 @@ export class PmsHttpClient implements PmsClient {
     headers.set("accept", "application/json");
     headers.set("authorization", `Bearer ${token}`);
     headers.set("x-request-id", requestId);
+    headers.set("client-id", this.options.clientId);
     headers.set("x-client-id", this.options.clientId);
     for (const [name, value] of Object.entries(this.options.traceHeaders ?? {})) {
       if (["traceparent", "tracestate", "baggage"].includes(name) && value) {

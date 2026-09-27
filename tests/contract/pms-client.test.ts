@@ -25,7 +25,7 @@ describe("PMS HTTP client", () => {
     const client = new PmsHttpClient({
       baseUrl: "https://pms.example.test/",
       auth: new StaticTokenProvider("short-lived-token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       requestIdFactory: () => "request-1",
       traceHeaders: {
         traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
@@ -44,7 +44,7 @@ describe("PMS HTTP client", () => {
     const headers = new Headers(captured?.init?.headers);
     expect(headers.get("authorization")).toBe("Bearer short-lived-token");
     expect(headers.get("x-request-id")).toBe("request-1");
-    expect(headers.get("x-client-id")).toBe("mcp");
+    expect(headers.get("x-client-id")).toBe("pms-cli");
     expect(headers.get("traceparent")).toBe(
       "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
     );
@@ -56,7 +56,7 @@ describe("PMS HTTP client", () => {
     const client = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "opencli",
+      clientId: "pms-cli",
       fetchImpl: async (_input, init) => {
         body = JSON.parse(String(init?.body)) as Record<string, unknown>;
         return response({
@@ -75,7 +75,7 @@ describe("PMS HTTP client", () => {
       context: { id: "topic:new", version: "1" },
       contract: { id: "pms-agent", version: "v1" },
       idempotencyKey: "idem-1",
-      clientId: "opencli",
+      clientId: "pms-cli",
       requestId: "request-2",
     });
 
@@ -87,7 +87,7 @@ describe("PMS HTTP client", () => {
       contractId: "pms-agent",
       contractVersion: "v1",
       idempotencyKey: "idem-1",
-      clientId: "opencli",
+      clientId: "pms-cli",
       requestId: "request-2",
     });
     expect(result).toMatchObject({
@@ -104,7 +104,7 @@ describe("PMS HTTP client", () => {
     const client = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       fetchImpl: async (input) => {
         requestedUrl = String(input);
         return response({
@@ -141,7 +141,7 @@ describe("PMS HTTP client", () => {
     const client = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       maxRetries: 0,
       fetchImpl: async () => response(null, code),
     });
@@ -157,7 +157,7 @@ describe("PMS HTTP client", () => {
     const client = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       maxRetries: 0,
       fetchImpl: async () => new Response("upstream failure", { status: 503 }),
     });
@@ -174,7 +174,7 @@ describe("PMS HTTP client", () => {
     const client = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       requestIdFactory: () => "capability-request",
       maxRetries: 0,
       fetchImpl: async () => response({
@@ -213,7 +213,7 @@ describe("PMS HTTP client", () => {
     const readClient = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       maxRetries: 1,
       retryDelayMs: 0,
       fetchImpl: async () => {
@@ -228,7 +228,7 @@ describe("PMS HTTP client", () => {
     const writeClient = new PmsHttpClient({
       baseUrl: "https://pms.example.test",
       auth: new StaticTokenProvider("token"),
-      clientId: "mcp",
+      clientId: "pms-cli",
       maxRetries: 3,
       retryDelayMs: 0,
       fetchImpl: async () => {
@@ -240,7 +240,7 @@ describe("PMS HTTP client", () => {
       operation: "topic.create",
       arguments: { title: "订单中心" },
       idempotencyKey: "idem-2",
-      clientId: "mcp",
+      clientId: "pms-cli",
       requestId: "request-3",
     })).rejects.toBeInstanceOf(PmsClientError);
     expect(writeAttempts).toBe(1);

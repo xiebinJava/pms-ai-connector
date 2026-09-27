@@ -1,32 +1,33 @@
-name: Validate connector
+name: Validate PMS CLI
 
 on:
   push:
     branches: [main, release]
   pull_request:
     branches: [main, release]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: connector-ci-${{ github.workflow }}-${{ github.ref }}
+  group: pms-cli-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   quality:
-    name: Typecheck, test, build
+    name: Typecheck, tests and installed CLI smoke
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
           version: 10.18.2
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
@@ -34,33 +35,35 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: pnpm typecheck
-      - name: Unit and contract tests
+      - name: Unit, contract and install tests
         run: pnpm test
-      - name: Build MCP server
-        run: pnpm run build:mcp
-      - name: Build and smoke-test OpenCLI bundle
-        run: pnpm run smoke:opencli
-      - name: Build production image
-        run: docker build --file deploy/Dockerfile --tag pms-ai-connector:ci .
+      - name: Build the standalone CLI
+        run: pnpm build:cli
+      - name: Smoke-test the installed executable
+        run: node dist/pms-cli.js doctor --format json
 
-  mcp-conformance:
-    name: MCP protocol conformance
+  readonly-e2e:
+    name: Optional isolated PMS readonly E2E
+    if: ${{ vars.PMS_E2E_READONLY == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: quality
     steps:
       - name: Check out source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
         with:
           version: 10.18.2
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Run official MCP conformance and protocol smoke
-        run: pnpm run conformance:mcp
+      - name: Run readonly E2E
+        env:
+          PMS_E2E_READONLY: true
+          PMS_E2E_BASE_URL: ${{ secrets.PMS_E2E_BASE_URL }}
+          PMS_E2E_TOKEN: ${{ secrets.PMS_E2E_TOKEN }}
+          PMS_E2E_PROJECT_ID: ${{ vars.PMS_E2E_PROJECT_ID }}
+        run: pnpm verify:real-pms:readonly
