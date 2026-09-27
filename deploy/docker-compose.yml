@@ -1,0 +1,27 @@
+services:
+  pms-mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PMS_BASE_URL: ${PMS_BASE_URL:?PMS_BASE_URL is required}
+      PMS_MCP_ALLOWED_ORIGINS: ${PMS_MCP_ALLOWED_ORIGINS:?PMS_MCP_ALLOWED_ORIGINS is required}
+      PMS_MCP_REQUIRE_AUTHORIZATION: ${PMS_MCP_REQUIRE_AUTHORIZATION:-true}
+      PMS_MCP_ALLOW_INSECURE_LOCALHOST: ${PMS_MCP_ALLOW_INSECURE_LOCALHOST:-false}
+      PMS_MCP_TRUST_FORWARDED_PROTO: ${PMS_MCP_TRUST_FORWARDED_PROTO:-false}
+      PMS_MCP_LEGACY: ${PMS_MCP_LEGACY:-reject}
+      PMS_MCP_SERVER_NAME: ${PMS_MCP_SERVER_NAME:-pms-mcp-server}
+      PMS_MCP_SERVER_VERSION: ${PMS_MCP_SERVER_VERSION:-0.1.0}
+      PMS_AUTH_TOKEN: ${PMS_AUTH_TOKEN:-}
+    ports:
+      - "${PMS_MCP_PORT_HOST:-3000}:3000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped

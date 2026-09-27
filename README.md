@@ -18,27 +18,45 @@ PMS AI Connector 是 PMS 与 OpenCLI、MCP 客户端之间的连接层。
 ### OpenCLI
 
 OpenCLI 当前按插件目录第一层扫描命令文件，因此插件入口位于
-`apps/opencli-plugin/` 顶层。开发仓库中的 workspace 依赖只用于本地测试；发布前必须生成独立安装包，再使用 OpenCLI 安装烟测。
+`apps/opencli-plugin/` 顶层。开发仓库中的 workspace 依赖只用于本地测试；发布前必须生成
+`dist/opencli-plugin/` 独立安装包，再使用 OpenCLI 安装烟测。
 
 ```bash
-opencli plugin install file:///absolute/path/to/pms-ai-connector/apps/opencli-plugin
+pnpm run build:opencli
+opencli plugin install file:///absolute/path/to/pms-ai-connector/dist/opencli-plugin
 opencli pms capabilities -f json
 opencli pms search topic --keyword 订单 -f json
 opencli pms get topic 7 -f json
 ```
 
-OpenCLI 通过 `PMS_BASE_URL` 和 `PMS_AUTH_TOKEN` 连接 PMS。`PMS_AUTH_TOKEN` 只从当前进程环境读取，不写入插件或日志。
+OpenCLI 通过 `PMS_BASE_URL` 和 `PMS_AUTH_TOKEN` 连接 PMS。`PMS_BASE_URL` 默认包含 PMS 的
+Spring context path：`http://localhost:8080/api`。`PMS_AUTH_TOKEN` 只从当前进程环境读取，不写入插件或日志。
 
 ### MCP stdio
 
 MCP stdio 入口使用同样的 `PMS_BASE_URL` 和 `PMS_AUTH_TOKEN`。配置客户端时请直接运行入口，避免把 `pnpm` 的启动提示写入 MCP stdout；开发环境可使用：
 
 ```bash
-PMS_BASE_URL=http://localhost:8080 PMS_AUTH_TOKEN=短期Token \
+PMS_BASE_URL=http://localhost:8080/api PMS_AUTH_TOKEN=短期Token \
   ./apps/mcp-server/node_modules/.bin/tsx apps/mcp-server/src/main.ts
 ```
 
-HTTP MCP 默认要求 Bearer Token、HTTPS 或可信反向代理，并拒绝未配置的浏览器 Origin；localhost 明文只允许显式开发配置。
+HTTP MCP 入口是 `apps/mcp-server/src/http-main.ts`，默认监听 `0.0.0.0:3000`，提供无需 PMS
+依赖的 `/healthz`。它默认要求 Bearer Token、HTTPS 或可信反向代理，并拒绝未配置的浏览器
+Origin；localhost 明文只允许显式开发配置。
+
+### Docker
+
+复制 `.env.example` 为 `.env`，填入 PMS 地址和允许的客户端 Origin。生产环境应让 MCP 客户端
+转发短期 Bearer Token；只有受信任的内部网关才应配置 `PMS_AUTH_TOKEN` 作为回退 Token。
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml up --build -d
+curl http://localhost:3000/healthz
+```
+
+`PMS_BASE_URL` 必须指向 PMS 集成门面，例如 `http://host.docker.internal:8080/api`；不要填写
+前端地址，也不要省略 `/api`。镜像使用只读根文件系统，Token 只通过环境变量或请求头传递。
 
 ## 业务范围
 
@@ -46,12 +64,39 @@ HTTP MCP 默认要求 Bearer Token、HTTPS 或可信反向代理，并拒绝未�
 
 需求只能关联项目、专题、故事中的一个执行对象；流程节点和组件从 PMS 当前绑定的已发布模板动态读取；迭代计划不绑定流程模板。
 
+## 文档
+
+- [安全模型](docs/security-model.md)
+- [OpenCLI 安装和使用](docs/opencli-setup.md)
+- [ChatGPT 远程 MCP 接入](docs/chatgpt-mcp-setup.md)
+- [DeepSeek Harness / 本地 Agent 接入](docs/deepseek-harness-setup.md)
+- [兼容矩阵](docs/compatibility-matrix.md)
+
 ## 开发
 
 ```bash
 pnpm install
 pnpm test
 pnpm typecheck
+pnpm run build:mcp
+pnpm run build:opencli
 ```
 
 当前首版验证环境：Node.js 24.10.0、pnpm 10.18.2；`engines.node` 保持 Node.js 22 及以上兼容范围。
+
+### 真实 PMS 闭环测试
+
+真实写入 E2E 默认跳过，必须显式提供隔离 PMS 实例、短期 Token、场景文件，并设置
+`PMS_E2E_WRITE=true`：
+
+```bash
+PMS_E2E_BASE_URL=http://localhost:8080/api \
+PMS_E2E_TOKEN=短期Token \
+PMS_E2E_SCENARIO_FILE=/absolute/path/to/scenario.json \
+PMS_E2E_WRITE=true \
+pnpm test
+```
+
+场景文件的 `steps`、`cleanup`、`assertions` 和 `invalidRelations` 只使用能力目录中实际发现的
+操作、动态字段和流程上下文；测试不会假设固定的节点名称，也不会直接访问数据库。清理必须
+通过 PMS 的业务命令完成，不能用 SQL 绕过领域规则。

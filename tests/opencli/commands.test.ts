@@ -11,6 +11,7 @@ import type {
 } from "../../packages/pms-contracts/src/index.js";
 import type { PmsClient } from "../../packages/pms-client/src/index.js";
 import {
+  defaultPmsBaseUrl,
   resetPmsClientFactory,
   setPmsClientFactoryForTests,
   toOpenCliError,
@@ -41,6 +42,7 @@ class FakePmsClient implements PmsClient {
       total: 0,
       page: request.page ?? 1,
       pageSize: request.pageSize ?? 20,
+      totalPage: 0,
       queryScope: "current-user-readable",
     };
   }
@@ -86,6 +88,10 @@ afterEach(() => {
 });
 
 describe("OpenCLI PMS plugin", () => {
+  it("uses the PMS application context path when no base URL is configured", () => {
+    expect(defaultPmsBaseUrl({})).toBe("http://localhost:8080/api");
+  });
+
   it("registers top-level local commands that share the PMS client contract", () => {
     expect([...getRegistry().keys()].filter((key) => key.startsWith("pms/")).sort()).toEqual([
       "pms/capabilities",

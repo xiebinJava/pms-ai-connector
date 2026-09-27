@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   automaticOperationRequestSchema,
   operationResultSchema,
+  queryResultSchema,
   resourceTypeSchema,
 } from "../../packages/pms-contracts/src/index.js";
 
@@ -39,5 +40,27 @@ describe("PMS connector shared schemas", () => {
 
     expect(result.operation).toBe("topic.create");
     expect(result.context).toBeUndefined();
+  });
+
+  it("keeps the PMS pagination envelope complete", () => {
+    const result = queryResultSchema.parse({
+      resourceType: "topic",
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
+      totalPage: 0,
+      queryScope: "current-user-readable",
+    });
+
+    expect(result.totalPage).toBe(0);
+    expect(() => queryResultSchema.parse({
+      resourceType: "topic",
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
+      queryScope: "current-user-readable",
+    })).toThrow();
   });
 });

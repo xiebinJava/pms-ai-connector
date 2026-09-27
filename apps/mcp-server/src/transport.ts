@@ -10,6 +10,8 @@ export interface PmsHttpHandlerOptions {
   allowedOrigins?: readonly string[];
   /** Local-only escape hatch for development over http://localhost. */
   allowInsecureLocalhost?: boolean;
+  /** Trust X-Forwarded-Proto only when the process is behind a controlled proxy. */
+  trustForwardedProto?: boolean;
   /** Keep authentication mandatory unless a trusted outer gateway is explicitly configured. */
   requireAuthorization?: boolean;
   /** Reject legacy MCP traffic by default; opt in only when an older client is required. */
@@ -62,7 +64,9 @@ function validateHttpRequest(request: Request, options: PmsHttpHandlerOptions): 
     return jsonErrorResponse(400, "请求地址无效");
   }
 
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",", 1)[0]?.trim().toLowerCase();
+  const forwardedProto = options.trustForwardedProto === true
+    ? request.headers.get("x-forwarded-proto")?.split(",", 1)[0]?.trim().toLowerCase()
+    : undefined;
   const isSecure = url.protocol === "https:" || forwardedProto === "https";
   const isLocalhost = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (!isSecure && !(options.allowInsecureLocalhost === true && isLocalhost)) {

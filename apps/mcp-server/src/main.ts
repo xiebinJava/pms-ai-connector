@@ -1,7 +1,7 @@
 import { authProviderFromEnv, PmsHttpClient } from "../../../packages/pms-client/src/index.js";
 import { servePmsStdio } from "./transport.js";
 
-const baseUrl = process.env.PMS_BASE_URL ?? "http://localhost:8080";
+const baseUrl = process.env.PMS_BASE_URL ?? "http://localhost:8080/api";
 const client = new PmsHttpClient({
   baseUrl,
   auth: authProviderFromEnv(process.env),

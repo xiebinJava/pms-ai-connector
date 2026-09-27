@@ -1,29 +1,48 @@
 import { z } from "zod";
-import { resourceTypeSchema } from "./operation.js";
+
+/** Resource types currently supported by the PMS read facade. */
+export const queryResourceTypeSchema = z.enum([
+  "requirement",
+  "project",
+  "topic",
+  "story",
+  "task",
+  "subtask",
+  "iteration_plan",
+]);
+export type QueryResourceType = z.infer<typeof queryResourceTypeSchema>;
+
+export const workflowResourceTypeSchema = z.enum([
+  "requirement",
+  "project",
+  "topic",
+  "story",
+]);
 
 export const queryRequestSchema = z.object({
-  resourceType: resourceTypeSchema,
+  resourceType: queryResourceTypeSchema,
   keyword: z.string().trim().max(200).optional(),
   filters: z.record(z.unknown()).default({}),
   page: z.number().int().positive().default(1),
-  pageSize: z.number().int().positive().max(200).default(20),
+  pageSize: z.number().int().positive().max(100).default(20),
 });
 
 export const queryItemSchema = z.object({
-  type: resourceTypeSchema,
+  type: queryResourceTypeSchema,
   id: z.number().int().positive(),
   name: z.string(),
   status: z.string().optional(),
-  version: z.number().int().nonnegative().optional(),
+  version: z.number().int().nonnegative().nullable().optional(),
   summary: z.record(z.unknown()).default({}),
 });
 
 export const queryResultSchema = z.object({
-  resourceType: resourceTypeSchema,
+  resourceType: queryResourceTypeSchema,
   items: z.array(queryItemSchema),
   total: z.number().int().nonnegative(),
   page: z.number().int().positive(),
   pageSize: z.number().int().positive(),
+  totalPage: z.number().int().nonnegative(),
   queryScope: z.string().min(1),
 });
 
@@ -52,7 +71,7 @@ export interface WorkflowContext {
 }
 
 export const workflowContextResponseSchema = z.object({
-  resourceType: resourceTypeSchema,
+  resourceType: workflowResourceTypeSchema,
   resourceId: z.number().int().positive(),
   version: z.number().int().nonnegative().nullable(),
   currentNode: z.object({

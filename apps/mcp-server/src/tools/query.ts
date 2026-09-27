@@ -3,13 +3,12 @@ import type { CallToolResult } from "@modelcontextprotocol/server";
 import type { PmsClient } from "../../../../packages/pms-client/src/index.js";
 import { toolFailure, toolSuccess } from "./result.js";
 
-const resourceTypes = [
-  "requirement", "project", "project_node", "topic", "topic_node", "story", "story_node",
-  "task", "subtask", "iteration_plan", "workflow_template", "user",
+const queryResourceTypes = [
+  "requirement", "project", "topic", "story", "task", "subtask", "iteration_plan",
 ] as const;
 
 export const searchInputSchema = z.object({
-  resourceType: z.enum(resourceTypes),
+  resourceType: z.enum(queryResourceTypes),
   keyword: z.string().trim().max(200).optional(),
   filters: z.record(z.string(), z.unknown()).default({}),
   page: z.number().int().positive().default(1),

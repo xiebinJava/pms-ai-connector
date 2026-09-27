@@ -32,6 +32,7 @@ class FakePmsClient implements PmsClient {
       total: 0,
       page: request.page ?? 1,
       pageSize: request.pageSize ?? 20,
+      totalPage: 0,
       queryScope: "current-user-readable",
     };
   }
@@ -202,6 +203,25 @@ describe("MCP PMS tools", () => {
       headers: { authorization: "Bearer token" },
     }));
     expect(insecure.status).toBe(400);
+
+    const spoofedForwardedProto = await handler.fetch(new Request("http://pms.example.com/mcp", {
+      headers: {
+        authorization: "Bearer token",
+        "x-forwarded-proto": "https",
+      },
+    }));
+    expect(spoofedForwardedProto.status).toBe(400);
+
+    const trustedProxyHandler = createPmsHttpHandler(() => client, {
+      trustForwardedProto: true,
+    });
+    const trustedForwardedProto = await trustedProxyHandler.fetch(new Request("http://pms.example.com/mcp", {
+      headers: {
+        authorization: "Bearer token",
+        "x-forwarded-proto": "https",
+      },
+    }));
+    expect(trustedForwardedProto.status).not.toBe(400);
 
     const disallowedOrigin = await handler.fetch(new Request("https://pms.example.com/mcp", {
       headers: {

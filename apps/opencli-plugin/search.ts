@@ -1,5 +1,5 @@
 import { cli, Strategy } from "@jackwener/opencli/registry";
-import { getPmsClient, parseJsonObject, positiveInteger, resourceType, runPmsCommand } from "./runtime.js";
+import { getPmsClient, parseJsonObject, positiveInteger, queryResourceType, runPmsCommand } from "./runtime.js";
 
 cli({
   site: "pms",
@@ -18,7 +18,7 @@ cli({
     { name: "pageSize", type: "int", default: 20, help: "每页条数" },
   ],
   func: async (kwargs) => runPmsCommand(() => getPmsClient().query({
-    resourceType: resourceType(kwargs.resourceType),
+    resourceType: queryResourceType(kwargs.resourceType),
     keyword: kwargs.keyword === undefined ? undefined : String(kwargs.keyword),
     filters: parseJsonObject(kwargs.filtersJson, "filtersJson"),
     page: positiveInteger(kwargs.page ?? 1, "page"),

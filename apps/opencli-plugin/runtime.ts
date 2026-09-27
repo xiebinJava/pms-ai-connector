@@ -6,12 +6,21 @@ import {
   PmsHttpClient,
 } from "../../packages/pms-client/src/index.js";
 import type { PmsClient } from "../../packages/pms-client/src/index.js";
-import { resourceTypeSchema, type ResourceType } from "../../packages/pms-contracts/src/index.js";
+import {
+  queryResourceTypeSchema,
+  resourceTypeSchema,
+  type QueryResourceType,
+  type ResourceType,
+} from "../../packages/pms-contracts/src/index.js";
 
 type PmsClientFactory = () => PmsClient;
 
+export function defaultPmsBaseUrl(env: Record<string, string | undefined> = process.env): string {
+  return env.PMS_BASE_URL ?? "http://localhost:8080/api";
+}
+
 const defaultClientFactory: PmsClientFactory = () => new PmsHttpClient({
-  baseUrl: process.env.PMS_BASE_URL ?? "http://localhost:8080",
+  baseUrl: defaultPmsBaseUrl(),
   auth: authProviderFromEnv(process.env),
   clientId: "opencli",
 });
@@ -71,6 +80,12 @@ export function validationError(message: string): CommandExecutionError {
 export function resourceType(value: unknown, fieldName = "resourceType"): ResourceType {
   const parsed = resourceTypeSchema.safeParse(requiredString(value, fieldName));
   if (!parsed.success) throw validationError(`${fieldName} 不是受支持的 PMS 资源类型`);
+  return parsed.data;
+}
+
+export function queryResourceType(value: unknown, fieldName = "resourceType"): QueryResourceType {
+  const parsed = queryResourceTypeSchema.safeParse(requiredString(value, fieldName));
+  if (!parsed.success) throw validationError("查询接口不支持该 PMS 资源类型: " + fieldName);
   return parsed.data;
 }
 
