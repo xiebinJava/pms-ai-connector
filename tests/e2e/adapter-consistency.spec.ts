@@ -20,14 +20,25 @@ describe("PMS adapter consistency E2E", () => {
         const execution = await runAdapterConsistencyCheck(scenario.adapterConsistency!);
         captures = execution.captures;
         expect(execution.opencli.status).toBe(execution.mcp.status);
-        expect(execution.opencli.data).toEqual(execution.mcp.data);
+        expect(execution.opencli.message).toBe(execution.mcp.message);
+        expect(execution.opencli.data).toMatchObject({
+          project: {
+            name: expect.stringContaining("PMS AI Connector adapter"),
+            description: "MCP 与 OpenCLI 结果一致性验收",
+            priority: 1,
+          },
+        });
+        expect(execution.mcp.data).toMatchObject({
+          project: {
+            name: expect.stringContaining("PMS AI Connector adapter"),
+            description: "MCP 与 OpenCLI 结果一致性验收",
+            priority: 1,
+          },
+        });
+        expect(execution.captures.projectId).not.toBe(execution.captures.opencliProjectId);
         expect(execution.opencli.refreshScopes).toEqual(execution.mcp.refreshScopes);
-        if (execution.mcp.operationId && execution.opencli.operationId) {
-          expect(execution.opencli.operationId).toBe(execution.mcp.operationId);
-        }
-        if (execution.mcp.auditId && execution.opencli.auditId) {
-          expect(execution.opencli.auditId).toBe(execution.mcp.auditId);
-        }
+        expect(execution.mcp.operationId).toEqual(expect.any(String));
+        expect(execution.opencli.operationId).toEqual(expect.any(String));
       } catch (error) {
         primaryFailure = error;
         captures = capturesFromScenarioError(error) ?? captures;

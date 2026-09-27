@@ -34,6 +34,7 @@ export type ScenarioAdapter = "mcp" | "opencli";
 export interface ScenarioStep {
   operation: string;
   adapter?: ScenarioAdapter;
+  whenCapture?: string;
   arguments?: Record<string, unknown>;
   context?: { id: unknown; version: unknown };
   contract?: { id: unknown; version: unknown };
@@ -55,6 +56,7 @@ export interface InvalidRelationCase extends ScenarioStep {
 }
 
 export interface ConcurrencyScenario {
+  setup?: ScenarioStep[];
   steps: [ScenarioStep, ScenarioStep];
   expectedKind?: string;
 }
@@ -161,11 +163,15 @@ export async function loadScenario(
   if (!isRecord(parsed) || !Array.isArray(parsed.steps)) {
     throw new Error("E2E 场景文件必须包含 steps 数组");
   }
+  const cleanup = Array.isArray(parsed.cleanup)
+    ? parsed.cleanup.map((step, index) => parseScenarioStep(step, `cleanup[${index}]`))
+    : undefined;
+  if (env.PMS_E2E_WRITE === "true" && (!cleanup || cleanup.length === 0)) {
+    throw new Error("PMS_E2E_WRITE=true 的 E2E 场景必须包含至少一个 cleanup 步骤");
+  }
   return {
     steps: parsed.steps.map((step, index) => parseScenarioStep(step, `steps[${index}]`)),
-    cleanup: Array.isArray(parsed.cleanup)
-      ? parsed.cleanup.map((step, index) => parseScenarioStep(step, `cleanup[${index}]`))
-      : undefined,
+    cleanup,
     assertions: Array.isArray(parsed.assertions)
       ? parsed.assertions.map((assertion, index) => parseQueryAssertion(assertion, `assertions[${index}]`))
       : undefined,
@@ -202,6 +208,7 @@ export async function runCapabilitiesThroughAdapters(
 export async function runScenarioSteps(
   steps: ScenarioStep[],
   env: Record<string, string | undefined> = process.env,
+  initialCaptures: Record<string, unknown> = {},
 ): Promise<Record<string, unknown>> {
   const capabilities = await runCapabilitiesThroughAdapters(env);
   const operations = operationNames(capabilities.mcp);
@@ -211,7 +218,10 @@ export async function runScenarioSteps(
     }
   }
 
-  const captures: Record<string, unknown> = { runId: randomUUID() };
+  const captures: Record<string, unknown> = {
+    ...initialCaptures,
+    runId: initialCaptures.runId ?? randomUUID(),
+  };
   try {
     for (const [index, step] of steps.entries()) {
       const result = await executeScenarioStep(step, captures, index, env);
@@ -237,6 +247,7 @@ export async function cleanupScenarioSteps(
     }
   }
   for (const [index, step] of cleanup.entries()) {
+    if (step.whenCapture && captures[step.whenCapture] === undefined) continue;
     const result = await executeScenarioStep(step, captures, index, env);
     applyCaptures(captures, step.capture, result);
   }
@@ -317,8 +328,12 @@ export async function runInvalidRelationCases(
 export async function runIdempotencyCheck(
   step: ScenarioStep,
   env: Record<string, string | undefined> = process.env,
+  initialCaptures: Record<string, unknown> = {},
 ): Promise<RepeatedExecutionResult> {
-  const captures: Record<string, unknown> = { runId: randomUUID() };
+  const captures: Record<string, unknown> = {
+    ...initialCaptures,
+    runId: initialCaptures.runId ?? randomUUID(),
+  };
   try {
     const first = await executeScenarioStep(step, captures, 0, env);
     applyCaptures(captures, step.capture, first);
@@ -332,8 +347,12 @@ export async function runIdempotencyCheck(
 export async function runConcurrentSteps(
   steps: [ScenarioStep, ScenarioStep],
   env: Record<string, string | undefined> = process.env,
+  initialCaptures: Record<string, unknown> = {},
 ): Promise<ConcurrentExecutionResult> {
-  const captures: Record<string, unknown> = { runId: randomUUID() };
+  const captures: Record<string, unknown> = {
+    ...initialCaptures,
+    runId: initialCaptures.runId ?? randomUUID(),
+  };
   try {
     const outcomes = await Promise.all(steps.map(async (step, index) => {
       try {
@@ -353,12 +372,17 @@ export async function runConcurrentSteps(
 export async function runAdapterConsistencyCheck(
   scenario: AdapterConsistencyScenario,
   env: Record<string, string | undefined> = process.env,
+  initialCaptures: Record<string, unknown> = {},
 ): Promise<AdapterConsistencyResult> {
-  const captures: Record<string, unknown> = { runId: randomUUID() };
+  const captures: Record<string, unknown> = {
+    ...initialCaptures,
+    runId: initialCaptures.runId ?? randomUUID(),
+  };
   try {
     const mcp = await executeScenarioStep({ ...scenario.mcp, adapter: "mcp" }, captures, 0, env);
     applyCaptures(captures, scenario.mcp.capture, mcp);
     const opencli = await executeScenarioStep({ ...scenario.opencli, adapter: "opencli" }, captures, 1, env);
+    applyCaptures(captures, scenario.opencli.capture, opencli);
     return { mcp, opencli, captures };
   } catch (error) {
     throw new ScenarioExecutionError(error, captures);
@@ -569,6 +593,9 @@ function parseScenarioStep(value: unknown, path: string): ScenarioStep {
   if (value.adapter !== undefined && value.adapter !== "mcp" && value.adapter !== "opencli") {
     throw new Error(`${path}.adapter 只能是 mcp 或 opencli`);
   }
+  if (value.whenCapture !== undefined && typeof value.whenCapture !== "string") {
+    throw new Error(`${path}.whenCapture 必须是字符串`);
+  }
   if (value.arguments !== undefined && (!isRecord(value.arguments) || Array.isArray(value.arguments))) {
     throw new Error(`${path}.arguments 必须是对象`);
   }
@@ -587,11 +614,14 @@ function parseConcurrencyScenario(value: unknown): ConcurrencyScenario {
   if (!isRecord(value) || !Array.isArray(value.steps) || value.steps.length !== 2) {
     throw new Error("concurrency.steps 必须包含两个场景步骤");
   }
+  const setup = Array.isArray(value.setup)
+    ? value.setup.map((step, index) => parseScenarioStep(step, `concurrency.setup[${index}]`))
+    : undefined;
   const steps = value.steps.map((step, index) => parseScenarioStep(step, `concurrency.steps[${index}]`)) as [ScenarioStep, ScenarioStep];
   if (value.expectedKind !== undefined && typeof value.expectedKind !== "string") {
     throw new Error("concurrency.expectedKind 必须是字符串");
   }
-  return { steps, expectedKind: value.expectedKind as string | undefined };
+  return { setup, steps, expectedKind: value.expectedKind as string | undefined };
 }
 
 function parseAdapterConsistencyScenario(value: unknown): AdapterConsistencyScenario {

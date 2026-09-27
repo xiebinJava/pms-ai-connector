@@ -6,6 +6,7 @@ import {
   loadScenario,
   runConcurrentSteps,
   runIdempotencyCheck,
+  runScenarioSteps,
 } from "./helpers.js";
 
 describe("PMS concurrency and idempotency E2E", () => {
@@ -45,12 +46,16 @@ describe("PMS concurrency and idempotency E2E", () => {
       let captures: Record<string, unknown> = {};
       let primaryFailure: unknown;
       try {
-        const execution = await runConcurrentSteps(scenario.concurrency!.steps);
+        captures = await runScenarioSteps(scenario.concurrency!.setup ?? []);
+        const execution = await runConcurrentSteps(scenario.concurrency!.steps, process.env, captures);
         captures = execution.captures;
         const errors = execution.outcomes.flatMap((outcome) => outcome.error ? [outcome.error] : []);
         expect(errors.length).toBeGreaterThanOrEqual(1);
         if (scenario.concurrency!.expectedKind) {
-          expect(errors.some((error) => error.kind === scenario.concurrency!.expectedKind)).toBe(true);
+          expect(
+            errors.some((error) => error.kind === scenario.concurrency!.expectedKind),
+            JSON.stringify(execution.outcomes),
+          ).toBe(true);
         }
       } catch (error) {
         primaryFailure = error;
