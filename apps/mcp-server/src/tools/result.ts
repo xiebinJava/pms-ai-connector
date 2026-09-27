@@ -40,6 +40,7 @@ export function normalizeToolError(error: unknown): Record<string, unknown> {
       message: error.message,
       ...(error.status === undefined ? {} : { status: error.status }),
       ...(error.requestId === undefined ? {} : { requestId: error.requestId }),
+      ...(error.details === undefined ? {} : { details: error.details }),
     };
   }
   if (error instanceof CapabilityResolutionError) {

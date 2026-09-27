@@ -170,6 +170,44 @@ describe("PMS HTTP client", () => {
     expect((error as Error).message).not.toContain("upstream failure");
   });
 
+  it("classifies capability schema drift as validation with issue paths", async () => {
+    const client = new PmsHttpClient({
+      baseUrl: "https://pms.example.test",
+      auth: new StaticTokenProvider("token"),
+      clientId: "mcp",
+      requestIdFactory: () => "capability-request",
+      maxRetries: 0,
+      fetchImpl: async () => response({
+        version: "ai-v1",
+        resources: [{
+          type: "topic",
+          actions: [{
+            name: "topic.create",
+            label: "创建专题",
+            description: "创建专题",
+            mode: "automatic",
+            risk: "low",
+            scopes: [],
+            inputSchema: { title: { required: true } },
+            requiresContext: false,
+            refreshScopes: [],
+          }],
+        }],
+        scopes: [],
+        workflowTypes: [],
+      }),
+    });
+
+    const error = await client.capabilities().catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(PmsClientError);
+    expect((error as PmsClientError).kind).toBe("validation");
+    expect((error as PmsClientError).requestId).toBe("capability-request");
+    expect((error as PmsClientError).details).toMatchObject({
+      fields: [expect.objectContaining({ path: "resources.0.actions.0.inputSchema.title.type" })],
+    });
+  });
+
   it("retries safe reads but never retries automatic writes", async () => {
     let readAttempts = 0;
     const readClient = new PmsHttpClient({

@@ -8,7 +8,7 @@ import type {
   ResourceRef,
   WorkflowContext,
 } from "../../packages/pms-contracts/src/index.js";
-import type { PmsClient } from "../../packages/pms-client/src/index.js";
+import { PmsClientError, type PmsClient } from "../../packages/pms-client/src/index.js";
 import { createPmsToolHandlers } from "../../apps/mcp-server/src/tools/index.js";
 import { normalizeToolError } from "../../apps/mcp-server/src/tools/result.js";
 import { createPmsHttpHandler, requestContextFromHeaders } from "../../apps/mcp-server/src/transport.js";
@@ -164,6 +164,28 @@ describe("MCP PMS tools", () => {
     expect(normalizeToolError(new Error("secret database connection string"))).toEqual({
       kind: "internal",
       message: "工具执行失败",
+    });
+  });
+
+  it("preserves PMS validation details for MCP callers", () => {
+    expect(normalizeToolError(new PmsClientError(
+      "validation",
+      "PMS 能力目录格式不兼容",
+      {
+        requestId: "request-validation",
+        details: {
+          issueCount: 1,
+          fields: [{ path: "resources.0.actions.0.inputSchema.title.type", message: "必填" }],
+        },
+      },
+    ))).toEqual({
+      kind: "validation",
+      message: "PMS 能力目录格式不兼容",
+      requestId: "request-validation",
+      details: {
+        issueCount: 1,
+        fields: [{ path: "resources.0.actions.0.inputSchema.title.type", message: "必填" }],
+      },
     });
   });
 

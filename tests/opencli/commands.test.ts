@@ -9,7 +9,7 @@ import type {
   ResourceRef,
   WorkflowContext,
 } from "../../packages/pms-contracts/src/index.js";
-import type { PmsClient } from "../../packages/pms-client/src/index.js";
+import { PmsClientError, type PmsClient } from "../../packages/pms-client/src/index.js";
 import {
   defaultPmsBaseUrl,
   resetPmsClientFactory,
@@ -176,5 +176,32 @@ describe("OpenCLI PMS plugin", () => {
     expect(error.message).toContain('"kind":"internal"');
     expect(error.message).not.toContain("secret connection string");
     expect(error.name).toBe("CommandExecutionError");
+  });
+
+  it("preserves structured PMS validation details for OpenCLI callers", () => {
+    const error = toOpenCliError(new PmsClientError(
+      "validation",
+      "PMS 能力目录格式不兼容",
+      {
+        requestId: "request-validation",
+        details: {
+          issueCount: 1,
+          fields: [{ path: "resources.0.actions.0.inputSchema.title.type", message: "必填" }],
+        },
+      },
+    ));
+
+    expect(JSON.parse(error.message)).toEqual({
+      ok: false,
+      error: {
+        kind: "validation",
+        message: "PMS 能力目录格式不兼容",
+        requestId: "request-validation",
+        details: {
+          issueCount: 1,
+          fields: [{ path: "resources.0.actions.0.inputSchema.title.type", message: "必填" }],
+        },
+      },
+    });
   });
 });

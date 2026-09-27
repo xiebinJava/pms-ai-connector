@@ -124,6 +124,7 @@ export function toOpenCliError(error: unknown): CommandExecutionError {
       message: error.message,
       ...(error.status === undefined ? {} : { status: error.status }),
       ...(error.requestId === undefined ? {} : { requestId: error.requestId }),
+      ...(error.details === undefined ? {} : { details: error.details }),
     }
     : { kind: "internal", message: "PMS 命令执行失败" };
 

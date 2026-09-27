@@ -10,6 +10,8 @@ export type PmsClientErrorKind =
   | "network"
   | "timeout";
 
+export type PmsClientErrorDetails = Readonly<Record<string, unknown>>;
+
 export class PmsClientError extends Error {
   readonly name = "PmsClientError";
 
@@ -20,6 +22,7 @@ export class PmsClientError extends Error {
       status?: number;
       requestId?: string;
       retryable?: boolean;
+      details?: PmsClientErrorDetails;
     } = {},
   ) {
     super(safeErrorMessage(message, "PMS 请求失败"));
@@ -35,6 +38,10 @@ export class PmsClientError extends Error {
 
   get retryable(): boolean {
     return this.options.retryable ?? (this.kind === "server" || this.kind === "rate_limited");
+  }
+
+  get details(): PmsClientErrorDetails | undefined {
+    return this.options.details;
   }
 }
 

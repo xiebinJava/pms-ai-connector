@@ -17,7 +17,7 @@ import {
 } from "../../pms-contracts/src/index.js";
 import { AuthProviderError } from "./AuthProvider.js";
 import type { AuthProvider } from "./AuthProvider.js";
-import { classifyPmsStatus, PmsClientError } from "./Errors.js";
+import { classifyPmsStatus, PmsClientError, safeErrorMessage } from "./Errors.js";
 import { createRequestContext } from "./RequestContext.js";
 import type { PmsClientId } from "./RequestContext.js";
 
@@ -76,8 +76,13 @@ export class PmsHttpClient implements PmsClient {
   }
 
   async capabilities(): Promise<CapabilityCatalog> {
-    const data = await this.requestData("integration/ai/v1/capabilities", { method: "GET" }, true);
-    return parseCapabilityCatalog(data);
+    return this.requestData<CapabilityCatalog>(
+      "integration/ai/v1/capabilities",
+      { method: "GET" },
+      true,
+      undefined,
+      (data, requestId) => parseCapabilityCatalogForClient(data, requestId),
+    );
   }
 
   async query(request: QueryRequest): Promise<QueryResult> {
@@ -145,12 +150,13 @@ export class PmsHttpClient implements PmsClient {
     });
   }
 
-  private async requestData(
+  private async requestData<T = unknown>(
     path: string,
     init: RequestInit,
     retrySafe: boolean,
     requestIdOverride?: string,
-  ): Promise<unknown> {
+    transform?: (data: unknown, requestId: string) => T,
+  ): Promise<T> {
     const requestId = requestIdOverride ?? this.requestIdFactory();
     const token = await this.getToken(requestId);
     const attempts = retrySafe ? this.maxRetries + 1 : 1;
@@ -165,7 +171,7 @@ export class PmsHttpClient implements PmsClient {
         if (status !== 200) {
           throw classifyPmsStatus(status, payload.msg, payload.requestId ?? requestId);
         }
-        return payload.data;
+        return transform ? transform(payload.data, requestId) : payload.data as T;
       } catch (error) {
         const clientError = this.toClientError(error, requestId);
         if (retrySafe && clientError.retryable && attempt < attempts) {
@@ -251,5 +257,25 @@ export class PmsHttpClient implements PmsClient {
   private async delay(milliseconds: number): Promise<void> {
     if (milliseconds <= 0) return;
     await new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+  }
+}
+
+function parseCapabilityCatalogForClient(input: unknown, requestId: string): CapabilityCatalog {
+  try {
+    return parseCapabilityCatalog(input);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new PmsClientError("validation", "PMS 能力目录格式不兼容", {
+        requestId,
+        details: {
+          issueCount: error.issues.length,
+          fields: error.issues.slice(0, 20).map((issue) => ({
+            path: issue.path.map(String).join("."),
+            message: safeErrorMessage(issue.message, "字段校验失败"),
+          })),
+        },
+      });
+    }
+    throw error;
   }
 }
