@@ -13,13 +13,16 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build:mcp": "esbuild apps/mcp-server/src/http-main.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/mcp-http-main.js",
     "build:opencli": "node scripts/build-opencli-plugin.mjs",
-    "smoke:opencli": "pnpm run build:opencli && node scripts/smoke-opencli-plugin.mjs"
+    "smoke:opencli": "pnpm run build:opencli && node scripts/smoke-opencli-plugin.mjs",
+    "conformance:mcp": "node scripts/run-mcp-conformance.mjs",
+    "start:mcp": "pnpm --filter @pms-ai-connector/mcp-server exec tsx src/http-main.ts"
   },
   "dependencies": {
-    "zod": "3.25.76"
+    "zod": "4.2.0"
   },
   "devDependencies": {
     "@jackwener/opencli": "1.8.8",
+    "@modelcontextprotocol/conformance": "0.2.0-alpha.11",
     "@types/node": "22.10.0",
     "esbuild": "0.23.1",
     "typescript": "5.7.2",

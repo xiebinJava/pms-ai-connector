@@ -7,6 +7,7 @@ import {
   StaticTokenProvider,
 } from "../../../packages/pms-client/src/index.js";
 import { createPmsHttpHandler } from "./transport.js";
+import type { PmsHttpRequestContext } from "./transport.js";
 
 export interface PmsHttpConfig {
   baseUrl: string;
@@ -17,6 +18,10 @@ export interface PmsHttpConfig {
   trustForwardedProto: boolean;
   requireAuthorization: boolean;
   legacy: "stateless" | "reject";
+  resourcePath: string;
+  oauthAuthorizationServers: readonly string[];
+  oauthResource?: string;
+  oauthScopes: readonly string[];
   name: string;
   version: string;
 }
@@ -38,6 +43,10 @@ export function readHttpConfig(
     trustForwardedProto: env.PMS_MCP_TRUST_FORWARDED_PROTO === "true",
     requireAuthorization: env.PMS_MCP_REQUIRE_AUTHORIZATION !== "false",
     legacy: env.PMS_MCP_LEGACY === "stateless" ? "stateless" : "reject",
+    resourcePath: normalizeResourcePath(env.PMS_MCP_RESOURCE_PATH ?? "/mcp"),
+    oauthAuthorizationServers: splitCsv(env.PMS_MCP_OAUTH_ISSUER),
+    oauthResource: env.PMS_MCP_OAUTH_RESOURCE?.trim() || undefined,
+    oauthScopes: splitCsv(env.PMS_MCP_OAUTH_SCOPES),
     name: env.PMS_MCP_SERVER_NAME ?? "pms-mcp-server",
     version: env.PMS_MCP_SERVER_VERSION ?? "0.1.0",
   };
@@ -47,17 +56,28 @@ export function createPmsHttpServer(options: PmsHttpServerOptions = {}): Server 
   const env = options.env ?? process.env;
   const config = readHttpConfig(env);
   const handler = options.handler ?? createPmsHttpHandler(
-    (authorization) => new PmsHttpClient({
-      baseUrl: config.baseUrl,
-      auth: tokenProviderFromRequest(authorization, env),
-      clientId: "mcp",
-    }),
+    (authorization, context: PmsHttpRequestContext) => {
+      const clientOptions: ConstructorParameters<typeof PmsHttpClient>[0] = {
+        baseUrl: config.baseUrl,
+        auth: tokenProviderFromRequest(authorization, env),
+        clientId: "mcp",
+        traceHeaders: context.traceHeaders,
+      };
+      if (context.requestId) clientOptions.requestIdFactory = () => context.requestId as string;
+      return new PmsHttpClient(clientOptions);
+    },
     {
       allowedOrigins: config.allowedOrigins,
       allowInsecureLocalhost: config.allowInsecureLocalhost,
       trustForwardedProto: config.trustForwardedProto,
       requireAuthorization: config.requireAuthorization,
       legacy: config.legacy,
+      oauth: {
+        resource: config.oauthResource,
+        resourcePath: config.resourcePath,
+        authorizationServers: config.oauthAuthorizationServers,
+        scopes: config.oauthScopes,
+      },
       server: { name: config.name, version: config.version },
     },
   );
@@ -105,6 +125,14 @@ function splitCsv(value: string | undefined): readonly string[] {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function normalizeResourcePath(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed || !trimmed.startsWith("/")) {
+    throw new Error("PMS_MCP_RESOURCE_PATH 必须以 / 开头");
+  }
+  return trimmed.length > 1 ? trimmed.replace(/\/$/, "") : trimmed;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

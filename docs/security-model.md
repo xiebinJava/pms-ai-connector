@@ -31,6 +31,12 @@ PMS 数据库和领域服务
 - 浏览器 `Origin` 必须精确匹配 `PMS_MCP_ALLOWED_ORIGINS`；不支持 `*`。
 - `PMS_MCP_ALLOW_INSECURE_LOCALHOST=true` 只用于本机开发，生产环境必须保持 `false`。
 - 连接器不接受请求体中的用户 ID 来覆盖登录身份。
+- 远程 MCP 可通过 `PMS_MCP_OAUTH_ISSUER`、`PMS_MCP_OAUTH_RESOURCE` 和
+  `PMS_MCP_OAUTH_SCOPES` 发布 OAuth 2.0 Protected Resource Metadata。连接器只负责资源发现、
+  `WWW-Authenticate` 挑战和 Token 转发，不在本地验证外部 JWT、不做用户映射，也不签发 PMS 权限；
+  外部授权服务器与 PMS 之间的信任/Token 交换必须由部署方和 PMS 配置完成。
+- 请求中的 `x-request-id` 和 W3C Trace Context 头只允许作为链路上下文转发，不会被当作用户身份或
+  权限依据。
 
 ## 3. 写操作安全
 
@@ -67,6 +73,7 @@ PMS 数据库和领域服务
 
 ## 7. 已知限制
 
-- 0.1.0 使用已有 PMS Token，不提供 OAuth/OIDC 登录流程。
+- 0.1.0 不在连接器内提供 OAuth/OIDC 登录页、Token 刷新或用户映射；它提供标准保护资源元数据，
+  并支持将调用方 Bearer Token 原样交给 PMS。
 - HTTP MCP 的可信代理责任由部署方承担；代理必须正确覆盖 `X-Forwarded-Proto`，不能让外部客户端伪造受信任来源。
 - 真实写入 E2E 默认关闭，需要显式的隔离 PMS、短期 Token 和场景文件。

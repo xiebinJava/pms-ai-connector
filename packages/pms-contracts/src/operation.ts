@@ -36,7 +36,7 @@ export type OperationContract = z.infer<typeof operationContractSchema>;
 
 export const automaticOperationRequestSchema = z.object({
   operation: z.string().trim().min(1).max(160),
-  arguments: z.record(z.unknown()).default({}),
+  arguments: z.record(z.string(), z.unknown()).default({}),
   context: operationContextSchema.optional(),
   contract: operationContractSchema.optional(),
   idempotencyKey: z.string().trim().min(1).max(160),
@@ -52,7 +52,7 @@ export const operationResultSchema = z.object({
   operationId: z.string().trim().min(1),
   status: operationStatusSchema,
   message: z.string().optional(),
-  data: z.record(z.unknown()).default({}),
+  data: z.record(z.string(), z.unknown()).default({}),
   warnings: z.array(z.string()).default([]),
   refreshScopes: z.array(z.string()).default([]),
   auditId: z.string().trim().min(1).optional(),

@@ -37,6 +37,7 @@ export interface PmsHttpClientOptions {
   maxRetries?: number;
   retryDelayMs?: number;
   requestIdFactory?: () => string;
+  traceHeaders?: Readonly<Record<string, string>>;
 }
 
 const responseEnvelopeSchema = z.object({
@@ -50,7 +51,7 @@ const operationWireResultSchema = z.object({
   operationId: z.string().min(1),
   status: z.enum(["SUCCEEDED", "REJECTED", "CONFLICT"]),
   message: z.string().optional(),
-  data: z.record(z.unknown()).nullable().optional(),
+  data: z.record(z.string(), z.unknown()).nullable().optional(),
   refreshScopes: z.array(z.string()).nullable().optional(),
   auditId: z.string().optional(),
 });
@@ -203,6 +204,11 @@ export class PmsHttpClient implements PmsClient {
     headers.set("authorization", `Bearer ${token}`);
     headers.set("x-request-id", requestId);
     headers.set("x-client-id", this.options.clientId);
+    for (const [name, value] of Object.entries(this.options.traceHeaders ?? {})) {
+      if (["traceparent", "tracestate", "baggage"].includes(name) && value) {
+        headers.set(name, value);
+      }
+    }
     if (init.body !== undefined) headers.set("content-type", "application/json");
     try {
       return await this.fetchImpl(new URL(path, this.baseUrl), {

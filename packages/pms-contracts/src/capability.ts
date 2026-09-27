@@ -26,7 +26,7 @@ export const actionCapabilitySchema = z.object({
   mode: executionModeSchema,
   risk: capabilityRiskSchema,
   scopes: z.array(z.string()),
-  inputSchema: z.record(fieldSchema),
+  inputSchema: z.record(z.string(), fieldSchema),
   requiresContext: z.boolean(),
   refreshScopes: z.array(z.string()),
 });
@@ -34,7 +34,7 @@ export const actionCapabilitySchema = z.object({
 export const workflowComponentSchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
-  fields: z.union([z.record(fieldSchema), z.array(fieldSchema)]),
+  fields: z.union([z.record(z.string(), fieldSchema), z.array(fieldSchema)]),
   actions: z.array(z.string()).default([]),
 });
 

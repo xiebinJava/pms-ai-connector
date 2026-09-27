@@ -1,0 +1,64 @@
+name: Validate connector
+
+on:
+  push:
+    branches: [main, release]
+  pull_request:
+    branches: [main, release]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: connector-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit and contract tests
+        run: pnpm test
+      - name: Build MCP server
+        run: pnpm run build:mcp
+      - name: Build and smoke-test OpenCLI bundle
+        run: pnpm run smoke:opencli
+      - name: Build production image
+        run: docker build --file deploy/Dockerfile --tag pms-ai-connector:ci .
+
+  mcp-conformance:
+    name: MCP protocol conformance
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run official MCP Conformance scenario
+        run: pnpm run conformance:mcp

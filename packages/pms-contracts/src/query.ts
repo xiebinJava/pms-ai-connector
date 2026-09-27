@@ -22,7 +22,7 @@ export const workflowResourceTypeSchema = z.enum([
 export const queryRequestSchema = z.object({
   resourceType: queryResourceTypeSchema,
   keyword: z.string().trim().max(200).optional(),
-  filters: z.record(z.unknown()).default({}),
+  filters: z.record(z.string(), z.unknown()).default({}),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20),
 });
@@ -33,7 +33,7 @@ export const queryItemSchema = z.object({
   name: z.string(),
   status: z.string().optional(),
   version: z.number().int().nonnegative().nullable().optional(),
-  summary: z.record(z.unknown()).default({}),
+  summary: z.record(z.string(), z.unknown()).default({}),
 });
 
 export const queryResultSchema = z.object({

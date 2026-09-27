@@ -43,7 +43,13 @@ PMS_BASE_URL=http://localhost:8080/api PMS_AUTH_TOKEN=短期Token \
 
 HTTP MCP 入口是 `apps/mcp-server/src/http-main.ts`，默认监听 `0.0.0.0:3000`，提供无需 PMS
 依赖的 `/healthz`。它默认要求 Bearer Token、HTTPS 或可信反向代理，并拒绝未配置的浏览器
-Origin；localhost 明文只允许显式开发配置。
+Origin；localhost 明文只允许显式开发配置。它会把请求中的 `x-request-id`、W3C
+`traceparent`/`tracestate`/`baggage` 传递给 PMS，方便把 AI 调用与 PMS 审计串起来。
+
+如果远程客户端需要 OAuth/OIDC，配置 `PMS_MCP_OAUTH_ISSUER`、可选的
+`PMS_MCP_OAUTH_RESOURCE` 和 `PMS_MCP_OAUTH_SCOPES`。连接器提供 RFC 9728 保护资源元数据和
+`WWW-Authenticate: Bearer resource_metadata=...` 挑战，但不在连接器内复制登录、用户映射或
+业务授权；Bearer Token 会原样交给 PMS，由 PMS 或受控身份网关完成校验/交换。
 
 ### Docker
 
@@ -80,6 +86,7 @@ pnpm test
 pnpm typecheck
 pnpm run build:mcp
 pnpm run build:opencli
+pnpm run conformance:mcp
 ```
 
 当前首版验证环境：Node.js 24.10.0、pnpm 10.18.2；`engines.node` 保持 Node.js 22 及以上兼容范围。
@@ -100,3 +107,10 @@ pnpm test
 场景文件的 `steps`、`cleanup`、`assertions` 和 `invalidRelations` 只使用能力目录中实际发现的
 操作、动态字段和流程上下文；测试不会假设固定的节点名称，也不会直接访问数据库。清理必须
 通过 PMS 的业务命令完成，不能用 SQL 绕过领域规则。
+
+### GitHub CI
+
+仓库的 GitHub Actions 会在 `release`/`main` 推送和 Pull Request 上执行类型检查、单元/契约测试、
+MCP 构建、OpenCLI 独立包烟测、Docker 构建以及固定版本的官方 MCP Conformance 无状态场景。
+Conformance 基线只包含官方测试要求的诊断工具/动态工具目录检查，不会屏蔽正常工具、协议版本或 HTTP 安全回归。
+真实 PMS 写入测试仍不会在 CI 中自动执行，避免把生产或共享环境当成测试数据库。

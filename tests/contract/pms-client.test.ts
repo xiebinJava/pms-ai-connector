@@ -27,6 +27,10 @@ describe("PMS HTTP client", () => {
       auth: new StaticTokenProvider("short-lived-token"),
       clientId: "mcp",
       requestIdFactory: () => "request-1",
+      traceHeaders: {
+        traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        tracestate: "vendor=value",
+      },
       fetchImpl: async (input, init) => {
         captured = { input, init };
         return response(capabilityPayload);
@@ -41,6 +45,10 @@ describe("PMS HTTP client", () => {
     expect(headers.get("authorization")).toBe("Bearer short-lived-token");
     expect(headers.get("x-request-id")).toBe("request-1");
     expect(headers.get("x-client-id")).toBe("mcp");
+    expect(headers.get("traceparent")).toBe(
+      "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+    );
+    expect(headers.get("tracestate")).toBe("vendor=value");
   });
 
   it("maps the connector operation request to the PMS command contract", async () => {

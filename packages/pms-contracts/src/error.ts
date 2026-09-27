@@ -14,7 +14,7 @@ export const pmsErrorSchema = z.object({
   code: errorCodeSchema,
   message: z.string().min(1),
   requestId: z.string().min(1).optional(),
-  details: z.record(z.unknown()).default({}),
+  details: z.record(z.string(), z.unknown()).default({}),
 });
 
 export type PmsError = z.infer<typeof pmsErrorSchema>;

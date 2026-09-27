@@ -1,0 +1,10 @@
+# The 2026-07-28 stateless suite has four diagnostic-only checks that require
+# test tools (for example, test_missing_capability) to be advertised by the
+# server. PMS exposes only production tools, so these checks are intentionally
+# baselined rather than adding non-production tools to the public API.
+server:
+  - server-stateless:sep-2575-server-rejects-undeclared-capability
+  - server-stateless:sep-2575-missing-capability-http-400
+  - server-stateless:sep-2575-http-server-no-independent-requests-on-stream
+  - server-stateless:sep-2575-server-no-log-without-loglevel
+  - server-stateless:sep-2575-server-sends-tools-list-changed-on-subscription

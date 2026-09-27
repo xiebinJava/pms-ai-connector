@@ -11,7 +11,7 @@ import type {
 import type { PmsClient } from "../../packages/pms-client/src/index.js";
 import { createPmsToolHandlers } from "../../apps/mcp-server/src/tools/index.js";
 import { normalizeToolError } from "../../apps/mcp-server/src/tools/result.js";
-import { createPmsHttpHandler } from "../../apps/mcp-server/src/transport.js";
+import { createPmsHttpHandler, requestContextFromHeaders } from "../../apps/mcp-server/src/transport.js";
 
 class FakePmsClient implements PmsClient {
   readonly calls: {
@@ -198,6 +198,7 @@ describe("MCP PMS tools", () => {
 
     const missingAuth = await handler.fetch(new Request("https://pms.example.com/mcp"));
     expect(missingAuth.status).toBe(401);
+    expect(missingAuth.headers.get("www-authenticate")).toBe("Bearer");
 
     const insecure = await handler.fetch(new Request("http://pms.example.com/mcp", {
       headers: { authorization: "Bearer token" },
@@ -238,5 +239,25 @@ describe("MCP PMS tools", () => {
       headers: { authorization: "Bearer token" },
     }));
     expect(local.status).not.toBe(400);
+  });
+
+  it("forwards the incoming request trace context to the PMS client factory", async () => {
+    const context = requestContextFromHeaders(new Headers({
+      authorization: "Bearer token",
+      "x-request-id": "incoming-request",
+      traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      tracestate: "vendor=value",
+      baggage: "userId=alice",
+    }));
+
+    expect(context).toEqual({
+      authorization: "Bearer token",
+      requestId: "incoming-request",
+      traceHeaders: {
+        traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+        tracestate: "vendor=value",
+        baggage: "userId=alice",
+      },
+    });
   });
 });

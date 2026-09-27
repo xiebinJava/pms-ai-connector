@@ -19,6 +19,10 @@ PMS_MCP_REQUIRE_AUTHORIZATION=true
 PMS_MCP_ALLOW_INSECURE_LOCALHOST=false
 PMS_MCP_TRUST_FORWARDED_PROTO=true
 PMS_MCP_LEGACY=reject
+PMS_MCP_RESOURCE_PATH=/mcp
+PMS_MCP_OAUTH_ISSUER=https://id.example.com/
+PMS_MCP_OAUTH_RESOURCE=https://mcp.example.com/mcp
+PMS_MCP_OAUTH_SCOPES=ai:context:read,ai:query:read,ai:command:preview
 ```
 
 启动：
@@ -29,6 +33,16 @@ curl https://mcp.example.com/healthz
 ```
 
 `/healthz` 返回 `{"status":"ok"}` 只表示 MCP 进程存活。
+
+配置 OAuth 后，客户端可以读取：
+
+```bash
+curl -i https://mcp.example.com/.well-known/oauth-protected-resource
+```
+
+未携带 Token 的 MCP 请求会通过 `WWW-Authenticate` 指向同一份元数据。连接器不会替代 PMS
+登录和授权；必须确保 OAuth 发行方签发的 Token 能被 PMS 集成门面接受，或由受控网关先完成
+Token 交换后再转发。
 
 ## 2. 反向代理要求
 
