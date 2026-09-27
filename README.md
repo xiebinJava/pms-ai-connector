@@ -108,6 +108,21 @@ pnpm test
 操作、动态字段和流程上下文；测试不会假设固定的节点名称，也不会直接访问数据库。清理必须
 通过 PMS 的业务命令完成，不能用 SQL 绕过领域规则。
 
+要验收真实 HTTP MCP 协议入口（包括 `server/discover`、`tools/list`、能力目录、搜索、流程上下文和
+一个隔离项目的创建/清理），在同一组隔离环境变量上执行：
+
+```bash
+PMS_E2E_BASE_URL=http://localhost:8080/api \
+PMS_E2E_TOKEN=短期Token \
+PMS_E2E_SCENARIO_FILE=/absolute/path/to/scenario.json \
+PMS_E2E_WRITE=true \
+pnpm run verify:real-pms:mcp
+```
+
+该命令会自动设置 `PMS_E2E_MCP=true`。它与 `pnpm run conformance:mcp` 的区别是：前者访问真实 PMS
+并执行受控的项目创建/删除，后者使用无 PMS 依赖的本地 MCP 进程验证协议和生产工具目录。两者都
+不会把 Token 写入文件或测试输出。
+
 ### GitHub CI
 
 仓库的 GitHub Actions 会在 `release`/`main` 推送和 Pull Request 上执行类型检查、单元/契约测试、

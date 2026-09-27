@@ -17,6 +17,7 @@ jobs:
   quality:
     name: Typecheck, test, build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -45,6 +46,7 @@ jobs:
   mcp-conformance:
     name: MCP protocol conformance
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: quality
     steps:
       - name: Check out source
@@ -60,5 +62,5 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Run official MCP Conformance scenario
+      - name: Run official MCP conformance and protocol smoke
         run: pnpm run conformance:mcp

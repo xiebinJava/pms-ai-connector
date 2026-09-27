@@ -15,6 +15,7 @@
     "build:opencli": "node scripts/build-opencli-plugin.mjs",
     "smoke:opencli": "pnpm run build:opencli && node scripts/smoke-opencli-plugin.mjs",
     "verify:real-pms:readonly": "PMS_E2E_READONLY=true vitest run tests/e2e/readonly-pms.spec.ts",
+    "verify:real-pms:mcp": "PMS_E2E_MCP=true vitest run tests/e2e/mcp-http.spec.ts",
     "conformance:mcp": "node scripts/run-mcp-conformance.mjs",
     "start:mcp": "pnpm --filter @pms-ai-connector/mcp-server exec tsx src/http-main.ts"
   },

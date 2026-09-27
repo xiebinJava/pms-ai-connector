@@ -37,10 +37,65 @@ process.once("SIGTERM", () => {
 try {
   await waitForHealth(`${baseUrl}/healthz`);
   const result = await runConformance(baseUrl);
+  if (result === 0) await runProtocolSmoke(baseUrl);
   process.exitCode = result;
 } finally {
   stopServer();
   await new Promise((resolve) => setTimeout(resolve, 100));
+}
+
+async function runProtocolSmoke(url) {
+  const discover = await callMcp(url, "server/discover", {});
+  if (!discover.supportedVersions?.includes("2026-07-28")) {
+    throw new Error("MCP protocol smoke failed: server/discover did not advertise 2026-07-28");
+  }
+
+  const listed = await callMcp(url, "tools/list", {});
+  const names = new Set((listed.tools ?? []).map((tool) => tool.name));
+  const requiredTools = [
+    "pms_capabilities",
+    "pms_search",
+    "pms_get",
+    "pms_get_context",
+    "pms_execute_operation",
+    "pms_workflow_action",
+  ];
+  const missing = requiredTools.filter((name) => !names.has(name));
+  if (missing.length > 0) {
+    throw new Error(`MCP protocol smoke failed: tools/list missing ${missing.join(", ")}`);
+  }
+  console.log("MCP protocol smoke passed: server/discover and tools/list");
+}
+
+async function callMcp(url, method, params) {
+  const response = await fetch(`${url}/mcp`, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/event-stream",
+      authorization: `Bearer ${serverEnv.PMS_AUTH_TOKEN}`,
+      "content-type": "application/json",
+      "Mcp-Method": method,
+      "MCP-Protocol-Version": "2026-07-28",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: `protocol-smoke-${method}`,
+      method,
+      params: {
+        ...params,
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": {},
+          "io.modelcontextprotocol/clientInfo": { name: "pms-ai-connector-conformance", version: "0.1.0" },
+        },
+      },
+    }),
+  });
+  const body = await response.json();
+  if (!response.ok || body.error) {
+    throw new Error(`MCP protocol smoke ${method} failed (${response.status}): ${body.error?.message ?? "unknown error"}`);
+  }
+  return body.result;
 }
 
 async function waitForHealth(url) {

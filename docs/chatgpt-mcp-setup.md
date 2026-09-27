@@ -73,3 +73,22 @@ curl -i https://mcp.example.com/mcp
 ```
 
 后一个请求没有正确 MCP 会话或认证时返回 401/4xx 是正常的；不要把 `/healthz` 的成功理解为 PMS 业务调用成功。实际调用必须携带 Bearer Token，并由 PMS 返回当前用户范围内的能力目录。
+
+## 5. 验收顺序和故障定位
+
+建议按下面的顺序验收，避免把“连接器进程存活”误判成“PMS 已经可用”：
+
+1. `healthz`：确认连接器进程存活；
+2. 保护资源元数据和无 Token 请求：确认 OAuth 发现和 401 challenge 可用；
+3. `server/discover`、`tools/list`：确认客户端与当前 MCP protocol version 以及 PMS 工具目录兼容；
+4. `pms_capabilities`：确认 Bearer Token 能通过 PMS，并能看到当前用户的资源、流程模板、节点、组件和字段；
+5. `pms_search`、`pms_get_context`：确认查询和动态流程上下文可用；
+6. 最后才验证 `pms_execute_operation` 或 `pms_workflow_action`。
+
+连接器仓库提供两类本地验收：`pnpm run conformance:mcp` 验证 MCP 官方无状态协议和生产工具目录，
+`pnpm run verify:real-pms:mcp` 验证真实 PMS 上的 HTTP MCP、能力目录、搜索、流程上下文以及一个
+隔离项目的创建/清理闭环。后者必须同时设置 `PMS_E2E_MCP=true`、`PMS_E2E_WRITE=true`、
+`PMS_E2E_BASE_URL`、`PMS_E2E_TOKEN` 和带 cleanup 的 `PMS_E2E_SCENARIO_FILE`，默认不会执行。
+
+真实写入验收只使用专用项目并通过 PMS 的 `project.delete` 清理；需求、专题、故事和迭代计划在
+PMS 提供对应的可审计删除/归档命令前，不应被加入不可回收的共享环境写入场景。

@@ -34,8 +34,10 @@
 | MCP stdio | 可用 | `initialize`、`tools/list`、6 个工具注册 |
 | MCP HTTP | 可用 | `/healthz`、Bearer、HTTPS/代理、Origin 门禁、OAuth 资源元数据、Trace Context 转发 |
 | OpenCLI | 可用 | pnpm run smoke:opencli 验证独立 bundle、临时 HOME 安装、能力命令和参数错误退出码 |
+| MCP protocol smoke | 可用 | `pnpm run conformance:mcp` 在官方无状态 conformance 后继续验证 `server/discover`、`tools/list` 和 2026-07-28 wire header |
 | 真实 PMS 只读验收 | 已提供 | `pnpm run verify:real-pms:readonly` 验证动态能力、需求/项目/专题/故事/迭代计划查询及专题/故事流程上下文；默认不执行写操作 |
-| 真实写入 E2E | 默认跳过 | 需要隔离 PMS、短期 Token、动态场景文件和 `PMS_E2E_WRITE=true` |
+| 真实 PMS HTTP MCP 验收 | 默认跳过 | `pnpm run verify:real-pms:mcp` 验证 HTTP MCP 的能力、搜索、流程上下文和隔离项目创建/清理；需要短期 Token、场景文件以及 `PMS_E2E_MCP=true PMS_E2E_WRITE=true` |
+| 真实写入 E2E | 默认跳过 | 需要隔离 PMS、短期 Token、动态场景文件和 `PMS_E2E_WRITE=true`；当前可回收的真实写入以项目生命周期为边界 |
 
 ## 不兼容或未覆盖
 
