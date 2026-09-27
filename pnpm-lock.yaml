@@ -22,6 +22,27 @@ importers:
         specifier: 2.1.9
         version: 2.1.9(@types/node@22.10.0)
 
+  packages/pms-capabilities:
+    dependencies:
+      '@pms-ai-connector/pms-contracts':
+        specifier: workspace:*
+        version: link:../pms-contracts
+
+  packages/pms-client:
+    dependencies:
+      '@pms-ai-connector/pms-contracts':
+        specifier: workspace:*
+        version: link:../pms-contracts
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+
+  packages/pms-contracts:
+    dependencies:
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+
 packages:
 
   '@esbuild/aix-ppc64@0.21.5':

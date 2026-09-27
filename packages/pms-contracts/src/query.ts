@@ -38,9 +38,9 @@ export interface ResourceRef {
 
 export interface WorkflowContext {
   resource: ResourceRef;
-  version: number;
+  version: number | null;
   currentNode?: {
-    id: number;
+    id: number | null;
     key: string;
     label: string;
   };
@@ -50,3 +50,20 @@ export interface WorkflowContext {
   };
   allowedActions: string[];
 }
+
+export const workflowContextResponseSchema = z.object({
+  resourceType: resourceTypeSchema,
+  resourceId: z.number().int().positive(),
+  version: z.number().int().nonnegative().nullable(),
+  currentNode: z.object({
+    id: z.number().int().positive().nullable(),
+    key: z.string().min(1),
+    label: z.string().min(1),
+  }).nullable().optional(),
+  workflow: z.object({
+    templateVersionId: z.number().int().positive().nullable().optional(),
+    templateVersionNo: z.number().int().positive().nullable().optional(),
+    nodes: z.array(z.unknown()),
+  }).nullable().optional(),
+  allowedActions: z.array(z.string()).default([]),
+}).passthrough();

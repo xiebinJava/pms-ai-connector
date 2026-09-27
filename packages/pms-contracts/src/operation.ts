@@ -27,12 +27,18 @@ export const operationContextSchema = z.object({
   version: z.string().trim().min(1),
 });
 
+export const operationContractSchema = z.object({
+  id: z.string().trim().min(1),
+  version: z.string().trim().min(1),
+});
+
+export type OperationContract = z.infer<typeof operationContractSchema>;
+
 export const automaticOperationRequestSchema = z.object({
   operation: z.string().trim().min(1).max(160),
-  resource: resourceRefSchema.optional(),
   arguments: z.record(z.unknown()).default({}),
   context: operationContextSchema.optional(),
-  expectedVersion: z.number().int().nonnegative().optional(),
+  contract: operationContractSchema.optional(),
   idempotencyKey: z.string().trim().min(1).max(160),
   clientId: z.enum(["mcp", "opencli"]),
   requestId: z.string().trim().min(1).max(160),
@@ -45,6 +51,7 @@ export const operationStatusSchema = z.enum(["SUCCEEDED", "REJECTED", "CONFLICT"
 export const operationResultSchema = z.object({
   operationId: z.string().trim().min(1),
   status: operationStatusSchema,
+  message: z.string().optional(),
   data: z.record(z.unknown()).default({}),
   warnings: z.array(z.string()).default([]),
   refreshScopes: z.array(z.string()).default([]),
