@@ -1,0 +1,21 @@
+{
+  "name": "@pms-ai-connector/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "2.1.0",
+    "@modelcontextprotocol/server": "2.1.0",
+    "@pms-ai-connector/pms-capabilities": "workspace:*",
+    "@pms-ai-connector/pms-client": "workspace:*",
+    "@pms-ai-connector/pms-contracts": "workspace:*",
+    "zod": "4.2.0"
+  },
+  "devDependencies": {
+    "tsx": "4.19.2"
+  }
+}
