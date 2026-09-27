@@ -27,6 +27,24 @@ export PMS_AUTH_TOKEN='短期用户Token'
 
 `PMS_BASE_URL` 必须包含 PMS 的 `/api` context path。Token 只从当前进程环境读取，不写入插件文件。
 
+## 只读链路验收
+
+在连接器仓库执行以下命令，可以验证当前 Token 对能力目录、资源查询和专题/故事流程上下文的访问，
+不会调用任何写操作：
+
+```bash
+PMS_E2E_BASE_URL=http://localhost:8080/api \
+PMS_E2E_TOKEN='短期测试Token' \
+pnpm run verify:real-pms:readonly
+```
+
+能力目录会按 Token scope 过滤动作。完整验收 Token 除了 `pms:query:read`，还应包含
+`pms:command:preview`、`pms:command:execute` 以及相关领域 scope；只有查询权限的 Token
+可以查询资源，但可能看不到对应的动作资源类型。若当前环境没有专题或故事数据，
+可以分别设置 `PMS_E2E_TOPIC_ID` 和 `PMS_E2E_STORY_ID` 指定可读的测试对象。
+
+`/healthz` 只表示连接器进程存活；只有只读验收通过，才说明连接器已经真正打通 PMS 业务接口。
+
 ## 常用命令
 
 ```bash

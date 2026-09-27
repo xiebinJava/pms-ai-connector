@@ -1,12 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { getRegistry } from "@jackwener/opencli/registry";
+import { z } from "zod";
 import {
   capabilityCatalogSchema,
   queryResultSchema,
+  resourceTypeSchema,
+  type ResourceRef,
   type CapabilityCatalog,
   type QueryResult,
   type ResourceType,
+  type WorkflowContext,
+  workflowResourceTypeSchema,
 } from "../../packages/pms-contracts/src/index.js";
 import {
   PmsHttpClient,
@@ -21,6 +26,7 @@ import {
 
 import "../../apps/opencli-plugin/capabilities.js";
 import "../../apps/opencli-plugin/search.js";
+import "../../apps/opencli-plugin/get.js";
 import "../../apps/opencli-plugin/execute.js";
 
 export type ScenarioAdapter = "mcp" | "opencli";
@@ -78,6 +84,11 @@ export interface AdapterQueryResult {
   opencli: QueryResult;
 }
 
+export interface AdapterContextResult {
+  mcp: WorkflowContext;
+  opencli: WorkflowContext;
+}
+
 export interface InvalidRelationResult {
   adapter: ScenarioAdapter;
   expectedKind: string;
@@ -132,6 +143,12 @@ export function e2eEnabled(env: Record<string, string | undefined> = process.env
     && Boolean(env.PMS_E2E_BASE_URL)
     && Boolean(env.PMS_E2E_TOKEN)
     && Boolean(env.PMS_E2E_SCENARIO_FILE);
+}
+
+export function readOnlyE2eEnabled(env: Record<string, string | undefined> = process.env): boolean {
+  return env.PMS_E2E_READONLY === "true"
+    && Boolean(env.PMS_E2E_BASE_URL)
+    && Boolean(env.PMS_E2E_TOKEN);
 }
 
 export async function loadScenario(
@@ -252,6 +269,26 @@ export async function runQueryThroughAdapters(
     filtersJson: JSON.stringify(input.filters),
     page: input.page,
     pageSize: input.pageSize,
+  }, createClient(env, "opencli")));
+  return { mcp, opencli };
+}
+
+export async function runContextThroughAdapters(
+  resource: ResourceRef,
+  env: Record<string, string | undefined> = process.env,
+): Promise<AdapterContextResult> {
+  const mcpHandlers = createPmsToolHandlers(createClient(env, "mcp"), {
+    clientId: "mcp",
+    requestIdFactory: randomUUID,
+  });
+  const mcpResult = await mcpHandlers.pms_get_context({
+    resourceType: resource.type,
+    resourceId: resource.id,
+  });
+  const mcp = parseMcpSuccess(mcpResult, workflowContextSchema, "pms_get_context");
+  const opencli = workflowContextSchema.parse(await runOpenCliCommand("get", {
+    resourceType: resource.type,
+    resourceId: resource.id,
   }, createClient(env, "opencli")));
   return { mcp, opencli };
 }
@@ -432,6 +469,24 @@ function parseMcpSuccess<T>(
     throw new Error(`${name} 返回了不符合契约的结构`);
   }
 }
+
+const workflowContextSchema = z.object({
+  resource: z.object({
+    type: workflowResourceTypeSchema,
+    id: z.number().int().positive(),
+  }),
+  version: z.number().int().nonnegative().nullable(),
+  currentNode: z.object({
+    id: z.number().int().positive().nullable(),
+    key: z.string().min(1),
+    label: z.string().min(1),
+  }).optional(),
+  workflow: z.object({
+    templateVersionId: z.number().int().positive().optional(),
+    nodes: z.array(z.unknown()),
+  }).optional(),
+  allowedActions: z.array(z.string()),
+});
 
 function parseMcpExecuteResult(result: {
   isError?: boolean;

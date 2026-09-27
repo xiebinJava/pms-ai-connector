@@ -34,6 +34,7 @@
 | MCP stdio | 可用 | `initialize`、`tools/list`、6 个工具注册 |
 | MCP HTTP | 可用 | `/healthz`、Bearer、HTTPS/代理、Origin 门禁、OAuth 资源元数据、Trace Context 转发 |
 | OpenCLI | 可用 | pnpm run smoke:opencli 验证独立 bundle、临时 HOME 安装、能力命令和参数错误退出码 |
+| 真实 PMS 只读验收 | 已提供 | `pnpm run verify:real-pms:readonly` 验证动态能力、需求/项目/专题/故事/迭代计划查询及专题/故事流程上下文；默认不执行写操作 |
 | 真实写入 E2E | 默认跳过 | 需要隔离 PMS、短期 Token、动态场景文件和 `PMS_E2E_WRITE=true` |
 
 ## 不兼容或未覆盖
