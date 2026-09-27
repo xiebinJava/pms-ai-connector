@@ -1,0 +1,6 @@
+{
+  "name": "pms",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0",
+  "description": "PMS 项目管理命令"
+}

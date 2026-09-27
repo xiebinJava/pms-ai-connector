@@ -1,0 +1,16 @@
+{
+  "name": "opencli-plugin-pms",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "peerDependencies": {
+    "@jackwener/opencli": ">=1.8.0"
+  },
+  "devDependencies": {
+    "@jackwener/opencli": "1.8.8"
+  },
+  "dependencies": {
+    "@pms-ai-connector/pms-client": "workspace:*",
+    "@pms-ai-connector/pms-contracts": "workspace:*"
+  }
+}

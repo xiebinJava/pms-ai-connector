@@ -1,0 +1,13 @@
+{
+  "name": "pms-ai-connector",
+  "version": "0.1.0",
+  "opencli": ">=1.8.0",
+  "description": "通过 OpenCLI 连接 PMS 的需求、项目、专题、故事、任务和迭代计划能力",
+  "plugins": {
+    "pms": {
+      "path": "apps/opencli-plugin",
+      "description": "PMS 项目管理命令",
+      "version": "0.1.0"
+    }
+  }
+}
