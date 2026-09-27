@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
   automaticOperationRequestSchema,
-  capabilityCatalogSchema,
+  parseCapabilityCatalog,
   operationResultSchema,
   queryRequestSchema,
   queryResultSchema,
@@ -77,7 +77,7 @@ export class PmsHttpClient implements PmsClient {
 
   async capabilities(): Promise<CapabilityCatalog> {
     const data = await this.requestData("integration/ai/v1/capabilities", { method: "GET" }, true);
-    return capabilityCatalogSchema.parse(data);
+    return parseCapabilityCatalog(data);
   }
 
   async query(request: QueryRequest): Promise<QueryResult> {

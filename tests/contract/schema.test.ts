@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   automaticOperationRequestSchema,
+  capabilityCatalogWireSchema,
+  fieldSchema,
   operationResultSchema,
   queryResultSchema,
   resourceTypeSchema,
@@ -62,5 +64,19 @@ describe("PMS connector shared schemas", () => {
       pageSize: 20,
       queryScope: "current-user-readable",
     })).toThrow();
+  });
+
+  it("keeps normalized fields strict while accepting the backend wire shape", () => {
+    expect(fieldSchema.safeParse({ type: "string" }).success).toBe(false);
+    expect(fieldSchema.safeParse({ type: "string", label: "标题" }).success).toBe(true);
+    expect(capabilityCatalogWireSchema.safeParse({
+      version: "ai-v1",
+      resources: [{
+        type: "topic",
+        actions: [],
+      }],
+      scopes: [],
+      workflowTypes: [],
+    }).success).toBe(true);
   });
 });

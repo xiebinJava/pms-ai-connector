@@ -1,0 +1,67 @@
+{
+  "version": "ai-v1",
+  "resources": [
+    {
+      "type": "topic",
+      "actions": [
+        {
+          "name": "topic.create",
+          "label": "创建专题",
+          "description": "创建一个专题",
+          "mode": "automatic",
+          "risk": "low",
+          "scopes": ["pms:command:execute"],
+          "inputSchema": {
+            "title": {
+              "type": "string",
+              "required": true,
+              "description": "专题名称"
+            },
+            "ownerId": {
+              "type": "integer",
+              "label": "负责人",
+              "required": false,
+              "referenceType": "user"
+            }
+          },
+          "requiresContext": false,
+          "refreshScopes": ["topic-list"]
+        }
+      ],
+      "workflow": {
+        "templateVersionId": 1,
+        "nodes": [
+          {
+            "key": "research",
+            "label": "需求调研",
+            "position": 0,
+            "components": [
+              {
+                "key": "research-report",
+                "label": "调研报告",
+                "fields": [
+                  {
+                    "key": "report",
+                    "type": "text",
+                    "required": true,
+                    "description": "调研结论",
+                    "enumValues": ["结论一", "结论二"]
+                  },
+                  {
+                    "type": "text",
+                    "required": false,
+                    "description": "没有 key 的兼容字段"
+                  }
+                ],
+                "actions": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "scopes": ["pms:command:execute"],
+  "workflowTypes": [],
+  "today": "2026-09-27"
+}
